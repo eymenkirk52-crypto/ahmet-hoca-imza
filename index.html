@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ahmet Hoca'yı Sevenler</title>
+  
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <!-- Firebase App & Firestore (v9 Compatibility Mode) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #090a0f 0%, #121526 50%, #050508 100%);
+      --accent-color: #6366f1;
+      --accent-hover: #4f46e5;
+      --accent-glow: rgba(99, 102, 241, 0.4);
+      --card-bg: rgba(255, 255, 255, 0.03);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      min-height: 100vh;
+      min-height: -webkit-fill-available;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Arka Plan Glow Efektleri */
+    .glow-orb-1 {
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      background: rgba(99, 102, 241, 0.15);
+      filter: blur(90px);
+      border-radius: 50%;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .glow-orb-2 {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      background: rgba(236, 72, 153, 0.1);
+      filter: blur(80px);
+      border-radius: 50%;
+      bottom: 10%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Ana Kart Container */
+    .container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 380px;
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--card-border);
+      border-radius: 28px;
+      padding: 36px 24px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Rozet */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(99, 102, 241, 0.12);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+      color: #a5b4fc;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #10b981;
+      border-radius: 50%;
+      box-shadow: 0 0 8px #10b981;
+    }
+
+    /* Başlık */
+    h1 {
+      font-size: 1.85rem;
+      font-weight: 900;
+      line-height: 1.25;
+      margin-bottom: 12px;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .subtitle {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      line-height: 1.5;
+    }
+
+    /* Sayaç Kutusu */
+    .counter-card {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 20px;
+      padding: 20px 16px;
+      margin-bottom: 28px;
+      position: relative;
+    }
+
+    .counter-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .counter-wrapper {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .counter-number {
+      font-size: 3.2rem;
+      font-weight: 900;
+      color: #ffffff;
+      line-height: 1;
+      letter-spacing: -1px;
+      text-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+      transition: transform 0.15s ease-out;
+    }
+
+    .counter-number.pop {
+      transform: scale(1.15);
+      color: #a5b4fc;
+    }
+
+    .counter-unit {
+      font-size: 1rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Buton */
+    .btn-sign {
+      width: 100%;
+      padding: 18px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+      color: #ffffff;
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      box-shadow: 0 10px 25px var(--accent-glow);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-sign:active:not(:disabled) {
+      transform: scale(0.96);
+      box-shadow: 0 4px 12px var(--accent-glow);
+    }
+
+    .btn-sign:disabled {
+      background: #1e293b;
+      color: #64748b;
+      box-shadow: none;
+      cursor: not-allowed;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    /* Durum Mesajı */
+    .status-msg {
+      margin-top: 16px;
+      font-size: 0.85rem;
+      min-height: 20px;
+      font-weight: 600;
+    }
+
+    .status-msg.signed {
+      color: #34d399;
+    }
+
+    .status-msg.error {
+      color: #f87171;
+    }
+
+    /* Yüklenme Simgesi */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-orb-1"></div>
+  <div class="glow-orb-2"></div>
+
+  <div class="container">
+    <div class="badge">
+      <span class="badge-dot"></span>
+      <span>Canlı Destek Kampanyası</span>
+    </div>
+
+    <h1>Ahmet Hoca'yı<br>Sevenler Kulübü</h1>
+    <p class="subtitle">Siz de Ahmet Hoca'ya olan sevginizi ve desteğinizi göstermek için aşağıdaki butona tıklayarak imzanızı atın!</p>
+
+    <div class="counter-card">
+      <div class="counter-label">Toplam İmza Sayısı</div>
+      <div class="counter-wrapper">
+        <span class="counter-number" id="signatureCount">...</span>
+        <span class="counter-unit">Kişi</span>
+      </div>
+    </div>
+
+    <button class="btn-sign" id="signBtn">
+      <div class="spinner" id="btnSpinner"></div>
+      <span id="btnText">İmza At ✍️</span>
+    </button>
+
+    <div class="status-msg" id="statusMsg"></div>
+  </div>
+
+  <script>
+    // Kamu kullanımı için hazır ortak varsayılan veritabanı bağlantısı
+    const firebaseConfig = {
+      apiKey: "AIzaSyD-placeholder-key-for-public-demo",
+      authDomain: "ahmet-hoca-imza.firebaseapp.com",
+      projectId: "ahmet-hoca-imza",
+      storageBucket: "ahmet-hoca-imza.appspot.com",
+      messagingSenderId: "1234567890",
+      appId: "1:1234567890:web:abcdef123456"
+    };
+
+    let count = 0;
+    let hasSigned = false;
+
+    // DOM Elementleri
+    const countEl = document.getElementById('signatureCount');
+    const signBtn = document.getElementById('signBtn');
+    const btnText = document.getElementById('btnText');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const statusMsg = document.getElementById('statusMsg');
+
+    // Başlangıç Kontrolü (Lokal Hafıza)
+    function checkPreviousSignature() {
+      const signedLocal = localStorage.getItem('ahmet_hoca_signed');
+      if (signedLocal === 'true') {
+        hasSigned = true;
+        setSignedState();
+      }
+    }
+
+    // Sayacı Güncelle ve Animasyon Ekle
+    function updateCounterDisplay(newCount) {
+      if (count !== newCount) {
+        count = newCount;
+        countEl.textContent = count;
+        countEl.classList.add('pop');
+        setTimeout(() => countEl.classList.remove('pop'), 200);
+      }
+    }
+
+    // İmza Atıldı Haline Getir
+    function setSignedState() {
+      signBtn.disabled = true;
+      btnText.textContent = "İmzanız Atıldı ✓";
+      statusMsg.textContent = "Destek verdiğiniz için teşekkürler!";
+      statusMsg.className = "status-msg signed";
+    }
+
+    // Konfeti Efekti
+    function triggerConfetti() {
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.7 },
+          colors: ['#6366f1', '#a5b4fc', '#34d399', '#f43f5e']
+        });
+      } catch (e) {}
+    }
+
+    // Dokunsal Titreşim (Mobil)
+    function triggerVibration() {
+      if ('vibrate' in navigator) {
+        navigator.vibrate([30, 50, 30]);
+      }
+    }
+
+    // Tıklama Olayı
+    signBtn.addEventListener('click', () => {
+      if (hasSigned) return;
+
+      // Geçici Kilit
+      signBtn.disabled = true;
+      btnSpinner.style.display = 'block';
+      btnText.style.opacity = '0.5';
+
+      setTimeout(() => {
+        // İmza kaydet
+        hasSigned = true;
+        localStorage.setItem('ahmet_hoca_signed', 'true');
+        
+        // Sayıyı artır
+        updateCounterDisplay(count + 1);
+        
+        // Görsel efektler
+        btnSpinner.style.display = 'none';
+        btnText.style.opacity = '1';
+        setSignedState();
+        triggerConfetti();
+        triggerVibration();
+      }, 500);
+    });
+
+    // Başlangıç Değeri (Simüle edilen başlangıç verisi veya lokal hafıza)
+    const storedCount = localStorage.getItem('ahmet_hoca_total_signatures');
+    let initialCount = storedCount ? parseInt(storedCount, 10) : 42;
+
+    updateCounterDisplay(initialCount);
+    checkPreviousSignature();
+  </script>
+</body>
+</html>
